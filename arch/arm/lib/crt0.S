@@ -76,6 +76,7 @@ ENTRY(_main)
 /*
  * Set up initial C runtime environment and call board_init_f(0).
  */
+#if 0
 
 #if defined(CONFIG_SPL_BUILD) && defined(CONFIG_SPL_STACK)
 	ldr	sp, =(CONFIG_SPL_STACK)
@@ -88,7 +89,27 @@ ENTRY(_main)
 	mov	r8, sp		/* GD is above SP */
 	mov	r0, #0
 	bl	board_init_f
+#endif
 
+	ldr	sp, =(CONFIG_SYS_INIT_SP_ADDR)
+	bic	sp, sp, #7 /* 8-byte alignment for ABI compliance */
+	bl nand_init_ll    /* 初始化NAND Flash */
+ 
+	mov r0, #0    
+	ldr r1,=_TEXT_BASE    /* _TEXT_BASE存在前4k空间里,若直接使用CONFIG_SYS_TEXT_BASE编译器可能会将这个宏定义放在SDRAM上，此时SDRAM上还没有代码 */
+
+	ldr r2,=_bss_start_ofs
+	
+
+        /* 重定位，参数1为重定位前代码存放的起始地址=0，参数2为重定位地址，参数3为代码重定位的结束地址 */
+	bl copy_code_to_sdram    
+	bl clear_bss    /* 清bss段 */
+	ldr pc,=call_board_init_f    /* 跳到SDRAM中执行call_board_init_f */
+ 
+call_board_init_f:
+	ldr	r0,=0x00000000
+	bl	board_init_f    /* 调用board_init_f */
+ 
 #if ! defined(CONFIG_SPL_BUILD)
 
 /*

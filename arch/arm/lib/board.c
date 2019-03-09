@@ -368,6 +368,7 @@ void board_init_f(ulong bootflag)
 
 	/* round down to next 4 kB limit */
 	addr &= ~(4096 - 1);
+	addr = CONFIG_SYS_TEXT_BASE;
 	debug("Top of RAM usable for U-Boot at: %08lx\n", addr);
 
 #ifdef CONFIG_LCD
